@@ -6,20 +6,20 @@
   <meta name="renderer" content="webkit">
   <meta http-equiv="X-UA-Compatible" content="IE=edge" >
   <link rel="dns-prefetch" href="http://www.cloudzqy.space">
-  <title>转义与XSS | blog</title>
+  <title>浅析mobx-react源码（一）：自动追踪依赖 | blog</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="最近公司的新版本开发，由于后端代码的更迭，前端出现了不少的xss漏洞，这里总结一下关于xss漏洞和前端转义的知识。xss攻击，即跨站脚本攻击，是前端所遇到的最普遍的网络攻击，也是前端最常见并需要防护的攻击。记得在今年年初，腾讯邮箱就出过一次xss漏洞，据说有开发者反馈到腾讯，才被发现解决，不过已经有黑客利用这个漏洞，到处发带有xss攻击的邮件，盗取了大量账号。可见，xss虽然简单，但攻击防不胜防">
-<meta name="keywords" content="XSS,转义">
+  <meta name="description" content="使用一种工具就像使用一个包装好的黑盒子，我们不必探究其内部到底是如何实现，只需要能够将用法了然于胸，什么样的输入会得到什么样的输出能有完美的预测。但不幸的事，大部分文档都难以让自己达到这点，为此我们不得不浅析一下源码，来探寻他是如何实现的，避免出现意料之外的情况导致bug，也防止做出多余的操作，精简代码，减少bug。 自动追踪依赖在使用redux的时候，我们不得不使用connect来从store中">
+<meta name="keywords" content="react">
 <meta property="og:type" content="article">
-<meta property="og:title" content="转义与XSS">
-<meta property="og:url" content="http://www.cloudzqy.space/笔记/转义与XSS/index.html">
+<meta property="og:title" content="浅析mobx-react源码（一）：自动追踪依赖">
+<meta property="og:url" content="http://www.cloudzqy.space/uncategorized/在react中使用mobx，浅析mobx-react源码/index.html">
 <meta property="og:site_name" content="blog">
-<meta property="og:description" content="最近公司的新版本开发，由于后端代码的更迭，前端出现了不少的xss漏洞，这里总结一下关于xss漏洞和前端转义的知识。xss攻击，即跨站脚本攻击，是前端所遇到的最普遍的网络攻击，也是前端最常见并需要防护的攻击。记得在今年年初，腾讯邮箱就出过一次xss漏洞，据说有开发者反馈到腾讯，才被发现解决，不过已经有黑客利用这个漏洞，到处发带有xss攻击的邮件，盗取了大量账号。可见，xss虽然简单，但攻击防不胜防">
+<meta property="og:description" content="使用一种工具就像使用一个包装好的黑盒子，我们不必探究其内部到底是如何实现，只需要能够将用法了然于胸，什么样的输入会得到什么样的输出能有完美的预测。但不幸的事，大部分文档都难以让自己达到这点，为此我们不得不浅析一下源码，来探寻他是如何实现的，避免出现意料之外的情况导致bug，也防止做出多余的操作，精简代码，减少bug。 自动追踪依赖在使用redux的时候，我们不得不使用connect来从store中">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2017-08-17T02:49:21.000Z">
+<meta property="og:updated_time" content="2018-01-29T11:05:22.000Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="转义与XSS">
-<meta name="twitter:description" content="最近公司的新版本开发，由于后端代码的更迭，前端出现了不少的xss漏洞，这里总结一下关于xss漏洞和前端转义的知识。xss攻击，即跨站脚本攻击，是前端所遇到的最普遍的网络攻击，也是前端最常见并需要防护的攻击。记得在今年年初，腾讯邮箱就出过一次xss漏洞，据说有开发者反馈到腾讯，才被发现解决，不过已经有黑客利用这个漏洞，到处发带有xss攻击的邮件，盗取了大量账号。可见，xss虽然简单，但攻击防不胜防">
+<meta name="twitter:title" content="浅析mobx-react源码（一）：自动追踪依赖">
+<meta name="twitter:description" content="使用一种工具就像使用一个包装好的黑盒子，我们不必探究其内部到底是如何实现，只需要能够将用法了然于胸，什么样的输入会得到什么样的输出能有完美的预测。但不幸的事，大部分文档都难以让自己达到这点，为此我们不得不浅析一下源码，来探寻他是如何实现的，避免出现意料之外的情况导致bug，也防止做出多余的操作，精简代码，减少bug。 自动追踪依赖在使用redux的时候，我们不得不使用connect来从store中">
   
     <link rel="alternative" href="/atom.xml" title="blog" type="application/atom+xml">
   
@@ -157,51 +157,37 @@
             <canvas data-colors="#eaeaea" data-sectionHeight="100" data-contentId="js-content" id="myCanvas1" class="anm-canvas"></canvas>
           </div>
           <div id="js-content" class="content-ll">
-            <article id="post-转义与XSS" class="article article-type-post " itemscope itemprop="blogPost">
+            <article id="post-在react中使用mobx，浅析mobx-react源码" class="article article-type-post " itemscope itemprop="blogPost">
   <div class="article-inner">
     
       <header class="article-header">
         
   
     <h1 class="article-title" itemprop="name">
-      转义与XSS
+      浅析mobx-react源码（一）：自动追踪依赖
     </h1>
   
 
         
-        <a href="/笔记/转义与XSS/" class="archive-article-date">
-  	<time datetime="2016-07-19T01:43:48.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2016-07-19</time>
+        <a href="/uncategorized/在react中使用mobx，浅析mobx-react源码/" class="archive-article-date">
+  	<time datetime="2018-01-29T07:17:46.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2018-01-29</time>
 </a>
         
       </header>
     
     <div class="article-entry" itemprop="articleBody">
       
-        <blockquote>
-<p>最近公司的新版本开发，由于后端代码的更迭，前端出现了不少的xss漏洞，这里总结一下关于xss漏洞和前端转义的知识。<br>xss攻击，即跨站脚本攻击，是前端所遇到的最普遍的网络攻击，也是前端最常见并需要防护的攻击。<br>记得在今年年初，腾讯邮箱就出过一次xss漏洞，据说有开发者反馈到腾讯，才被发现解决，不过已经有黑客利用这个漏洞，到处发带有xss攻击的邮件，盗取了大量账号。可见，xss虽然简单，但攻击防不胜防，即使是腾讯这样的大公司也可能出现疏漏。而且一旦漏洞被黑客利用，直接就能通过获取cookie等手段盗取用户账号，引起重大损失。  </p>
-</blockquote>
-<a id="more"></a>
-<h2 id="关于XSS"><a href="#关于XSS" class="headerlink" title="关于XSS"></a>关于XSS</h2><p>这里先介绍一下xss攻击的简单实现。通常前端总是免不了和数据打交道，经常要插入数据进dom中，这就给了攻击者可趁之机，因为浏览器并不知道你是想要单纯的插入dom，还是插入脚本，一旦恶意脚本被注入，攻击者就能简单地获取到用户的信息。<br><figure class="highlight js"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">var</span> div = <span class="built_in">document</span>.getElementById(<span class="string">'title'</span>);</div><div class="line"><span class="keyword">var</span> title = <span class="string">'xss攻击'</span>;</div><div class="line">div.innerHTML = title;</div></pre></td></tr></table></figure></p>
-<p>这段代码中，一担’xss攻击’字符串变为<code>&lt;img src=1 onerror=alert(&quot;xss&quot;)&gt;</code>,就会将脚本注入进去。这只是众多xss攻击中的其中一种，有兴趣的可以自行搜索。通过恶意代码的注入，攻击者就能够从<code>document.cookie</code>中取得用户cookie然后通过ajax发送出去。  </p>
-<h2 id="关于htmlEncode-和-htmlDecode"><a href="#关于htmlEncode-和-htmlDecode" class="headerlink" title="关于htmlEncode 和 htmlDecode"></a>关于<code>htmlEncode</code> 和 <code>htmlDecode</code></h2><p>html中是不允许某些特殊字符出现的，比如说<code>&lt;&gt;</code>,一旦出现这种字符，浏览器将会把他当成一个闭合标签，而不是单纯的文本，引起解析错误，因此我们需要对特殊字符进行encode(转义),而浏览器在输出这些转义后的字符时，会自行进行一次decode(反转义)，比如往浏览器输入<code>&amp;lt;</code>将会被decode成<code>&lt;</code>,而被decode后的字符，就只是单纯的字符串，而不会被浏览器解析。  </p>
-<h2 id="如何防止XSS攻击"><a href="#如何防止XSS攻击" class="headerlink" title="如何防止XSS攻击"></a>如何防止XSS攻击</h2><p>插入到dom的文本中出现特殊字符，都是及其危险的事，而攻击者则会想方设法让代码中出现特殊字符。通常，对XSS攻击的防御要从前后端两方面来做。只要有用户输入的地方，都要进行encode，比如用户名，简介，地址等等，防止前端数据中直接出现&lt;&gt;等特殊字符，入口侧从后端来阻止，出口侧则由前端来阻止。基本上对于现代浏览器，只需要保证对尖括号进行了处理，就能阻止各类神奇的xss攻击。<br>通常前端的encode方法有两种。<br>方案一<br><figure class="highlight js"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">htmlEncode = <span class="function"><span class="keyword">function</span> (<span class="params">str</span>) </span>&#123;</div><div class="line">  <span class="keyword">var</span> div;</div><div class="line">  div = <span class="built_in">document</span>.createElement(<span class="string">'div'</span>);</div><div class="line">  div.appendChild(<span class="built_in">document</span>.createTextNode(str));</div><div class="line">  <span class="keyword">return</span> div.innerHTML;</div><div class="line">&#125;;</div></pre></td></tr></table></figure></p>
-<p>通过create一个文本节点来插入div，再取出来，来达成encode，这种方法的优点就是利用源生的方法，转义快速且全面。<br>还有一种方案就是利用正则来替换特殊字符串来实现，一般的模板引擎或者框架都会进行encode来保护代码安全，下面我们来看一下doT.js模板源码encode的实现<br><figure class="highlight js"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div></pre></td><td class="code"><pre><div class="line">doT.encodeHTMLSource = <span class="function"><span class="keyword">function</span>(<span class="params">doNotSkipEncoded</span>) </span>&#123;</div><div class="line">  <span class="keyword">var</span> encodeHTMLRules = &#123; </div><div class="line">  <span class="string">"&amp;"</span>: <span class="string">"&amp;#38;"</span>, </div><div class="line">  <span class="string">"&lt;"</span>: <span class="string">"&amp;#60;"</span>,</div><div class="line">  <span class="string">"&gt;"</span>: <span class="string">"&amp;#62;"</span>,</div><div class="line">  <span class="string">'"'</span>: <span class="string">"&amp;#34;"</span>,</div><div class="line">  <span class="string">"'"</span>: <span class="string">"&amp;#39;"</span>,</div><div class="line">  <span class="string">"/"</span>: <span class="string">"&amp;#47;"</span></div><div class="line">  &#125;,</div><div class="line">  matchHTML = doNotSkipEncoded ? <span class="regexp">/[&amp;&lt;&gt;"'\/]/g</span> : <span class="regexp">/&amp;(?!#?\w+;)|&lt;|&gt;|"|'|\//g</span>;</div><div class="line">  <span class="keyword">return</span> <span class="function"><span class="keyword">function</span>(<span class="params">code</span>) </span>&#123;</div><div class="line">    <span class="keyword">return</span> code ? code.toString().replace(matchHTML, <span class="function"><span class="keyword">function</span>(<span class="params">m</span>) </span>&#123;<span class="keyword">return</span> encodeHTMLRules[m] || m;&#125;) : <span class="string">""</span>;</div><div class="line">  &#125;;</div><div class="line">&#125;;</div></pre></td></tr></table></figure></p>
-<p>其实就是对固定的一套特殊字符进行替换，注意这里的<code>doNotSkipEncoded</code>，在有些版本是没有，默认为<code>false</code>的，这个就是为了防止二次转义。<br>要知道特殊字符大多转成<code>&#39;&amp;#38;&#39;</code>或者<code>&#39;&amp;lt;&#39;</code>的形式，而<code>&amp;</code>本身就是特殊字符，还可以继续进行转义，所以<code>htmlEncode(htmlEncode(&#39;&lt;&#39;))</code>则会变成<code>&#39;&amp;amp;lt;&#39;</code>，将这段字符插入dom中，将会得到<code>&#39;&amp;lt;&#39;</code>，对用户来说自己只是输了一个’&lt;’就变成了乱码，所以<code>/&amp;(?!#?\w+;)|&lt;|&gt;|&quot;|&#39;|\//g</code>这段正则中默认排除了<code>&amp;(?!#?\w+;)</code>这种情况进行二次转义。<br>这段方法可以简化成</p>
-<pre><code class="js"><span class="function"><span class="keyword">function</span> <span class="title">htmlEncodeReg</span> (<span class="params">str</span>) </span>{
-<span class="keyword">var</span> encodeHTMLRules = {
-<span class="string">'&amp;'</span>: <span class="string">'&amp;#38;'</span>,
-<span class="string">'&lt;'</span>: <span class="string">'&amp;lt;'</span>,
-<span class="string">'&gt;'</span>: <span class="string">'&amp;gt;'</span>,
-<span class="string">'"'</span>: <span class="string">'&amp;#34;'</span>,
-<span class="string">"'"</span>: <span class="string">'&amp;#39;'</span>,
-<span class="string">'/'</span>: <span class="string">'&amp;#47;'</span>
-};
-<span class="keyword">var</span> matchHTML = <span class="regexp">/&amp;(?!#?\w+;)|&lt;|&gt;|"|'|\//g</span>;
-<span class="keyword">return</span> str ? str.toString().replace(matchHTML, <span class="function"><span class="keyword">function</span> (<span class="params">m</span>) </span>{ <span class="keyword">return</span> encodeHTMLRules[m] || m; }) : <span class="string">''</span>;
-}
-</code></pre>
-<p>两种方法互有优缺点，前一种方法容易引发的会提是后端转义一次+前端也转义一次，引发二次转义，用户输入的<code>&lt;&gt;&amp;</code>等字符会变成<code>&amp;lt;&amp;gt;&amp;#39;</code>，而后一种方法引发问题的情况是后端没转义，用户输入<code>&amp;lt;&amp;gt;&amp;#39;</code>等代码会变成<code>&lt;&gt;&amp;</code>。</p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>在实际生产环境中，如果不考虑某些数据库自己的问题，后端在数据输入口进行处理其实是最为妥当的，再不济也可以在每个接口进行转义，因为前端的数据出口随需求增长很快，很容易出现纰漏。<br>但是每个公司都会有自己的历史遗留，作为一个前端，你必须想办法把所有的数据出口都进行保护，但又不能保证后端处理的正确一致。会出现有些数据encode了，而有些没有，甚至后端以前为了防止sql注入攻击，仅仅把所有引号都转义了，后来随着新工具的出现，又开始不转的情况。<br>如果前端清一色的转义，很可能出现二次转义，而发生乱码问题。<br>经过讨论，我们结合自己实际情况，决定前端统一使用正则替换的方法encode，毕竟用户输入转义后的字符几率较小，不至于出现重大bug，而后端尽量把所有接口都进行一次encode，这样两方配合，能最大的减少出现XSS漏洞的情况。</p>
+        <p>使用一种工具就像使用一个包装好的黑盒子，我们不必探究其内部到底是如何实现，只需要能够将用法了然于胸，什么样的输入会得到什么样的输出能有完美的预测。但不幸的事，大部分文档都难以让自己达到这点，为此我们不得不浅析一下源码，来探寻他是如何实现的，避免出现意料之外的情况导致bug，也防止做出多余的操作，精简代码，减少bug。</p>
+<h2 id="自动追踪依赖"><a href="#自动追踪依赖" class="headerlink" title="自动追踪依赖"></a>自动追踪依赖</h2><p>在使用redux的时候，我们不得不使用connect来从store中取到当前组件所需要的state，这其实也是一个依赖分析的问题，只有当组件所依赖的state变化时，当前组件才会更新，避免了不必要的render。而在使用mobx时，这一步被自动完成了，因此在使用mobx时，会感到极其酸爽舒适，只需要一个@observer就能尽情地使用store中的state了，而且完全不用担心性能问题，那么这究竟是如何做到的？<br><a id="more"></a></p>
+<h2 id="了解mobx机制"><a href="#了解mobx机制" class="headerlink" title="了解mobx机制"></a>了解mobx机制</h2><p>在探究mobx-react的源码之前，得先了解一下mobx。<br><figure class="highlight javascript"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">import</span> &#123; Reaction, observable &#125; <span class="keyword">from</span> <span class="string">'mobx'</span>;</div><div class="line"><span class="keyword">const</span> obj = observable(&#123; <span class="attr">num</span>: <span class="number">0</span> &#125;);</div><div class="line"><span class="keyword">const</span> reaction = <span class="keyword">new</span> Reaction(<span class="string">'reaction name'</span>, <span class="function"><span class="keyword">function</span> (<span class="params"></span>) </span>&#123;</div><div class="line">  <span class="keyword">this</span>.track(<span class="function"><span class="params">()</span> =&gt;</span> &#123;</div><div class="line">    <span class="built_in">console</span>.log(<span class="string">'track num++'</span>, obj.num);</div><div class="line">  &#125;);</div><div class="line">&#125;);</div><div class="line">reaction.track(<span class="function"><span class="params">()</span> =&gt;</span> &#123;</div><div class="line">  <span class="built_in">console</span>.log(<span class="string">'reaction init'</span>, obj.num);</div><div class="line">&#125;);</div><div class="line"><span class="comment">// 输出 reaction init 0</span></div><div class="line"></div><div class="line">obj.num++; <span class="comment">// 输出 track num++ 1</span></div><div class="line">obj.num++; <span class="comment">// 输出 track num++ 2</span></div></pre></td></tr></table></figure></p>
+<p>mobx在observable改造了<code>{ num: 0 }</code>这个对象为可观察对象，当取obj的属性num时，能会执行其内部的方法。<br>reaction的track方法传进去的回调中，执行<code>console.log(&#39;reaction init&#39;, obj.num)</code>时，get到了obj.num值，这时mobx会将这个属性作为依赖与此reaction绑定，当obj.num变化时，就会执行实例化reaction时传进去进去的回调<br><figure class="highlight javascript"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">function</span> (<span class="params"></span>) </span>&#123;</div><div class="line">  <span class="keyword">this</span>.track(<span class="function"><span class="params">()</span> =&gt;</span> &#123;</div><div class="line">    <span class="built_in">console</span>.log(<span class="string">'track num++'</span>, obj.num);</div><div class="line">  &#125;);</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>这时会输出track num++ 1，并从新确定依赖关系。接下来看下一个例子<br><figure class="highlight javascript"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">import</span> &#123; Reaction, observable &#125; <span class="keyword">from</span> <span class="string">'mobx'</span>;</div><div class="line"><span class="keyword">const</span> obj = observable(&#123; <span class="attr">num</span>: <span class="number">0</span>, <span class="attr">letter</span>: <span class="string">'a'</span>, <span class="attr">bool</span>: <span class="literal">true</span> &#125;);</div><div class="line"><span class="keyword">const</span> callback = <span class="function"><span class="keyword">function</span> (<span class="params"></span>) </span>&#123;</div><div class="line">  <span class="keyword">if</span> (obj.bool) &#123;</div><div class="line">    <span class="built_in">console</span>.log(obj.num);</div><div class="line">  &#125; <span class="keyword">else</span> &#123;</div><div class="line">    <span class="built_in">console</span>.log(obj.letter);</div><div class="line">  &#125;</div><div class="line">&#125;;</div><div class="line"><span class="keyword">const</span> reaction = <span class="keyword">new</span> Reaction(<span class="string">'reaction name'</span>, <span class="function"><span class="keyword">function</span> (<span class="params"></span>) </span>&#123;</div><div class="line">  <span class="keyword">this</span>.track(callback);</div><div class="line">&#125;);</div><div class="line">reaction.track(callback); <span class="comment">// 第一次track，分析到依赖[obj.bool, obj.num]，输出 0</span></div><div class="line">obj.num++; <span class="comment">// 第二次track，分析到依赖依然是[obj.bool, obj.num]，输出 1</span></div><div class="line">obj.letter = <span class="string">'b'</span>; <span class="comment">// obj.letter不在依赖中，不执行this.track(callback)</span></div><div class="line">obj.bool = <span class="literal">false</span>; <span class="comment">// obj.bool在依赖中，执行this.track(callback);重新分析依赖[obj.bool, obj.letter] 输出 b</span></div><div class="line">obj.num++; <span class="comment">// 此时obj.num不在依赖中，不输出任何值</span></div><div class="line">obj.letter = <span class="string">'c'</span>; <span class="comment">// 此时obj.letter在依赖中，输出 c</span></div></pre></td></tr></table></figure></p>
+<p>由此可见，mobx可以在每次执行时会分析依赖，并且将在callback中，却并不执行的属性排除在依赖外，减少了callback。<br>看到这里，我们应该能想到，只要将callback当成react的render，就能完美地解决对react的对接，并且比使用redux的时候性能更好！因为使用redux的时候将依赖num，letter，bool三个属性，无论哪个改变都讲触发组件的render，除非根据业务逻辑写上复杂的componentShouldUpdate，而使用mobx时，只要其中某个state的改变不影响view的改变时，这个state的变化就不会引起组件render，达到更细粒度上对render的控制，近乎完美地排除不需要的render。  </p>
+<h2 id="mobx-react源码片段探究"><a href="#mobx-react源码片段探究" class="headerlink" title="mobx-react源码片段探究"></a>mobx-react源码片段探究</h2><p>那么接下来看一看mobx-react的源码是如何实现的<br><figure class="highlight javascript"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line"><span class="comment">// 使用mobx-react</span></div><div class="line"><span class="keyword">import</span> React, &#123; Component&#125; <span class="keyword">from</span> <span class="string">'react'</span>;</div><div class="line"><span class="keyword">import</span> &#123; observer &#125; <span class="keyword">from</span> <span class="string">'mobx-react'</span>;</div><div class="line">@observer</div><div class="line"><span class="keyword">export</span> <span class="keyword">default</span> MyCom extends Component &#123;</div><div class="line">  render() &#123;</div><div class="line">    <span class="comment">// ...do something</span></div><div class="line">  &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div></pre></td><td class="code"><pre><div class="line"><span class="comment">// mobx-react的源码片段</span></div><div class="line"><span class="comment">// ...</span></div><div class="line"><span class="keyword">const</span> baseRender = <span class="keyword">this</span>.render.bind(<span class="keyword">this</span>) <span class="comment">// 组件自己的render就是baseRender</span></div><div class="line"><span class="keyword">let</span> reaction = <span class="literal">null</span></div><div class="line"><span class="keyword">let</span> isRenderingPending = <span class="literal">false</span></div><div class="line"><span class="comment">// 定义initialRender，用来代替组件第一次render</span></div><div class="line"><span class="keyword">const</span> initialRender = <span class="function"><span class="params">()</span> =&gt;</span> &#123;</div><div class="line">  reaction = <span class="keyword">new</span> Reaction(<span class="string">`<span class="subst">$&#123;initialName&#125;</span>#<span class="subst">$&#123;rootNodeID&#125;</span>.render()`</span>, () =&gt; &#123;</div><div class="line">      <span class="keyword">if</span> (!isRenderingPending) &#123;</div><div class="line">          <span class="comment">// 防止在constructor中修改store触发引起的副作用（此时还没有初始render）</span></div><div class="line">          isRenderingPending = <span class="literal">true</span></div><div class="line"></div><div class="line">          <span class="comment">// 触发mobx-react添加的一个生命周期</span></div><div class="line">          <span class="keyword">if</span> (<span class="keyword">typeof</span> <span class="keyword">this</span>.componentWillReact === <span class="string">"function"</span>) <span class="keyword">this</span>.componentWillReact() </div><div class="line"></div><div class="line">          <span class="comment">// 防止componentWillRect引起的副作用</span></div><div class="line">          <span class="keyword">if</span> (<span class="keyword">this</span>.__$mobxIsUnmounted !== <span class="literal">true</span>) &#123;</div><div class="line">              <span class="keyword">let</span> hasError = <span class="literal">true</span></div><div class="line">              <span class="keyword">try</span> &#123;</div><div class="line">                  isForcingUpdate = <span class="literal">true</span></div><div class="line">                  <span class="comment">// 在组件有props时，mobx会帮你监听，当props改变时，会进行shallowly modified，</span></div><div class="line">                  <span class="comment">// 并且forceUpdate，这里我们暂时不用管</span></div><div class="line">                  <span class="keyword">if</span> (!skipRender) Component.prototype.forceUpdate.call(<span class="keyword">this</span>)</div><div class="line">                  hasError = <span class="literal">false</span></div><div class="line">              &#125; <span class="keyword">finally</span> &#123;</div><div class="line">                  isForcingUpdate = <span class="literal">false</span></div><div class="line">                  <span class="keyword">if</span> (hasError) reaction.dispose()</div><div class="line">              &#125;</div><div class="line">          &#125;</div><div class="line">      &#125;</div><div class="line">  &#125;)</div><div class="line">  reaction.reactComponent = <span class="keyword">this</span></div><div class="line">  reactiveRender.$mobx = reaction</div><div class="line">  <span class="comment">// 用reactRender替代render</span></div><div class="line">  <span class="keyword">this</span>.render = reactiveRender</div><div class="line">  <span class="comment">// 执行reactiveRender</span></div><div class="line">  <span class="keyword">return</span> reactiveRender()</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="keyword">const</span> reactiveRender = <span class="function"><span class="params">()</span> =&gt;</span> &#123;</div><div class="line">  isRenderingPending = <span class="literal">false</span></div><div class="line">  <span class="keyword">let</span> exception = <span class="literal">undefined</span></div><div class="line">  <span class="keyword">let</span> rendering = <span class="literal">undefined</span></div><div class="line">  reaction.track(<span class="function"><span class="params">()</span> =&gt;</span> &#123;</div><div class="line">      <span class="keyword">if</span> (isDevtoolsEnabled) &#123;</div><div class="line">          <span class="keyword">this</span>.__$mobRenderStart = <span class="built_in">Date</span>.now()</div><div class="line">      &#125;</div><div class="line">      <span class="keyword">try</span> &#123;</div><div class="line">          <span class="comment">// 允许state改变，然后执行baseRedner，这里将解析一次render中对state属性的依赖</span></div><div class="line">          rendering = extras.allowStateChanges(<span class="literal">false</span>, baseRender)</div><div class="line">      &#125; <span class="keyword">catch</span> (e) &#123;</div><div class="line">          exception = e</div><div class="line">      &#125;</div><div class="line">      <span class="keyword">if</span> (isDevtoolsEnabled) &#123;</div><div class="line">          <span class="keyword">this</span>.__$mobRenderEnd = <span class="built_in">Date</span>.now()</div><div class="line">      &#125;</div><div class="line">  &#125;)</div><div class="line">  <span class="keyword">if</span> (exception) &#123;</div><div class="line">      errorsReporter.emit(exception)</div><div class="line">      <span class="keyword">throw</span> exception</div><div class="line">  &#125;</div><div class="line">  <span class="keyword">return</span> rendering</div><div class="line">&#125;</div><div class="line"><span class="comment">// ...</span></div></pre></td></tr></table></figure>
+<p>这样就达到了用mobx控制react组件的render。</p>
+<h2 id="结论"><a href="#结论" class="headerlink" title="结论"></a>结论</h2><p>对这一段代码我们可以知道，仅仅在组件上加一行@observer然后使用mobx的可观察属性进行render控制view，就能达到性能的高效化，对单个state属性的粒度上控制组件的render，所以放心大胆地用mobx来管理应用的state吧！</p>
+<p>下一篇 分批处理变化</p>
 
       
 
@@ -215,28 +201,13 @@
 		<ul class="article-tag-list">
 			 
         		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color4">XSS</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">转义</a>
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">react</a>
         		</li>
       		
 		</ul>
 	</div>
 
       
-	<div class="article-category tagcloud">
-		<i class="icon-book icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="/categories/笔记//" class="article-tag-list-link color3">笔记</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
 
       
 
@@ -286,7 +257,7 @@
     <a class="close js-modal-close" href="javascript:;"><i class="icon icon-close"></i></a>
     <p>扫一扫，分享到微信</p>
     <div class="wx-qrcode">
-      <img src="//pan.baidu.com/share/qrcode?url=http://www.cloudzqy.space/笔记/转义与XSS/" alt="微信分享二维码">
+      <img src="//pan.baidu.com/share/qrcode?url=http://www.cloudzqy.space/uncategorized/在react中使用mobx，浅析mobx-react源码/" alt="微信分享二维码">
     </div>
 </div>
 
@@ -300,18 +271,9 @@
   
 <nav id="article-nav">
   
-    <a href="/收藏/收藏一篇async库的文章/" id="article-nav-newer" class="article-nav-link-wrap">
-      <i class="icon-circle-left"></i>
-      <div class="article-nav-title">
-        
-          收藏一篇async库的文章
-        
-      </div>
-    </a>
   
-  
-    <a href="/备忘/删除node-modules/" id="article-nav-older" class="article-nav-link-wrap">
-      <div class="article-nav-title">删除node_modules</div>
+    <a href="/uncategorized/备忘-常用node库/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">备忘-常用node库</div>
       <i class="icon-circle-right"></i>
     </a>
   

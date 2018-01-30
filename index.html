@@ -58,6 +58,8 @@
 			
 				<li><a href="/">主页</a></li>
 	        
+				<li><a href="/tags/备忘/">备忘</a></li>
+	        
 				<li><a href="/tags/react-native/">react-native</a></li>
 	        
 			</ul>
@@ -114,6 +116,8 @@
 			
 				
 			
+				
+			
 			
 			
 			<nav class="header-nav">
@@ -129,12 +133,14 @@
 			</nav>
 
 			<nav class="header-menu js-header-menu">
-				<ul style="width: 50%">
+				<ul style="width: 70%">
 				
 				
-					<li style="width: 50%"><a href="/">主页</a></li>
+					<li style="width: 33.333333333333336%"><a href="/">主页</a></li>
 		        
-					<li style="width: 50%"><a href="/tags/react-native/">react-native</a></li>
+					<li style="width: 33.333333333333336%"><a href="/tags/备忘/">备忘</a></li>
+		        
+					<li style="width: 33.333333333333336%"><a href="/tags/react-native/">react-native</a></li>
 		        
 				</ul>
 			</nav>
@@ -150,6 +156,171 @@
           </div>
           <div id="js-content" class="content-ll">
             
+  
+    <article id="post-在react中使用mobx，浅析mobx-react源码" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/uncategorized/在react中使用mobx，浅析mobx-react源码/">浅析mobx-react源码（一）：自动追踪依赖</a>
+    </h1>
+  
+
+        
+        <a href="/uncategorized/在react中使用mobx，浅析mobx-react源码/" class="archive-article-date">
+  	<time datetime="2018-01-29T07:17:46.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2018-01-29</time>
+</a>
+        
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>使用一种工具就像使用一个包装好的黑盒子，我们不必探究其内部到底是如何实现，只需要能够将用法了然于胸，什么样的输入会得到什么样的输出能有完美的预测。但不幸的事，大部分文档都难以让自己达到这点，为此我们不得不浅析一下源码，来探寻他是如何实现的，避免出现意料之外的情况导致bug，也防止做出多余的操作，精简代码，减少bug。</p>
+<h2 id="自动追踪依赖"><a href="#自动追踪依赖" class="headerlink" title="自动追踪依赖"></a>自动追踪依赖</h2><p>在使用redux的时候，我们不得不使用connect来从store中取到当前组件所需要的state，这其实也是一个依赖分析的问题，只有当组件所依赖的state变化时，当前组件才会更新，避免了不必要的render。而在使用mobx时，这一步被自动完成了，因此在使用mobx时，会感到极其酸爽舒适，只需要一个@observer就能尽情地使用store中的state了，而且完全不用担心性能问题，那么这究竟是如何做到的？<br>
+        
+          <a class="article-more-a" href="/uncategorized/在react中使用mobx，浅析mobx-react源码/#more">more >></a>
+        
+      
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">react</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+      
+
+      
+        <p class="article-more-link">
+          <a class="article-more-a" href="/uncategorized/在react中使用mobx，浅析mobx-react源码/">展开全文 >></a>
+        </p>
+      
+
+      
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
+    <article id="post-备忘-常用node库" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/uncategorized/备忘-常用node库/">备忘-常用node库</a>
+    </h1>
+  
+
+        
+        <a href="/uncategorized/备忘-常用node库/" class="archive-article-date">
+  	<time datetime="2018-01-15T06:35:39.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2018-01-15</time>
+</a>
+        
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <ul>
+<li><p><code>source-map-support</code><br>在使用<code>babel-polyfill</code>后<code>require(&#39;source-map-support&#39;).install()</code>引入source-map  </p>
+</li>
+<li><p><code>babel-register</code>  </p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="comment">// Javascript require hook</span></div><div class="line"><span class="built_in">require</span>(<span class="string">'babel-register'</span>)(&#123;</div><div class="line">    presets: [<span class="string">'es2015'</span>, <span class="string">'react'</span>, <span class="string">'stage-0'</span>],</div><div class="line">    plugins: [<span class="string">'add-module-exports'</span>]</div><div class="line">&#125;)</div></pre></td></tr></table></figure>
+</li>
+<li><p><code>koa-convert</code><br>将koa1的generator转为await</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">const</span> convert = <span class="built_in">require</span>(<span class="string">'koa-convert'</span>);</div><div class="line">app.use(convert(bodyparser));</div></pre></td></tr></table></figure>
+</li>
+<li><p><code>koa-webpack-dev-middleware</code><br>webpack中间件</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">const</span> compiler = webpack(config)</div><div class="line">app.use(convert(devMiddleware(compiler, &#123;</div><div class="line">    noInfo: <span class="literal">true</span>,</div><div class="line">    publicPath: config.output.publicPath</div><div class="line">&#125;)))</div></pre></td></tr></table></figure>
+</li>
+<li><p><code>koa-webpack-hot-middleware</code></p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">const</span> compiler = webpack(config)</div><div class="line">app.use(convert(hotMiddleware(compiler)))</div></pre></td></tr></table></figure></li>
+</ul>
+
+      
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">备忘</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+      
+
+      
+        <p class="article-more-link">
+          <a class="article-more-a" href="/uncategorized/备忘-常用node库/">展开全文 >></a>
+        </p>
+      
+
+      
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
   
     <article id="post-使用react-native-web将你的react-native应用H5化" class="article article-type-post  article-index" itemscope itemprop="blogPost">
   <div class="article-inner">
@@ -785,184 +956,6 @@
 
 
   
-    <article id="post-收藏一篇async库的文章" class="article article-type-post  article-index" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/收藏/收藏一篇async库的文章/">收藏一篇async库的文章</a>
-    </h1>
-  
-
-        
-        <a href="/收藏/收藏一篇async库的文章/" class="archive-article-date">
-  	<time datetime="2016-07-22T03:11:57.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2016-07-22</time>
-</a>
-        
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>最近在写个chrome插件，发现chrome插件的API清一色的异步回调，批量处理的时候，光靠es6的Promise有点困难，让我想起以前用node写爬虫时用的async库，忘得差不多了，捡起来学习一下。<br><a href="http://my.oschina.net/huangsz/blog/176203" target="_blank" rel="external">http://my.oschina.net/huangsz/blog/176203</a><br>有空再写写笔记记录一下，这个库还是挺好用的，基本涵盖了需要处理大量异步回调的场景。</p>
-
-      
-
-      
-    </div>
-    <div class="article-info article-info-index">
-      
-      
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">node 异步</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-      
-	<div class="article-category tagcloud">
-		<i class="icon-book icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="/categories/收藏//" class="article-tag-list-link color3">收藏</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-
-      
-        <p class="article-more-link">
-          <a class="article-more-a" href="/收藏/收藏一篇async库的文章/">展开全文 >></a>
-        </p>
-      
-
-      
-      <div class="clearfix"></div>
-    </div>
-  </div>
-</article>
-
-<aside class="wrap-side-operation">
-    <div class="mod-side-operation">
-        
-        <div class="jump-container" id="js-jump-container" style="display:none;">
-            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
-                <i class="icon-font icon-back"></i>
-            </a>
-            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
-                <i class="icon-font icon-plane jump-plane"></i>
-            </div>
-        </div>
-        
-        
-    </div>
-</aside>
-
-
-
-
-  
-    <article id="post-转义与XSS" class="article article-type-post  article-index" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/笔记/转义与XSS/">转义与XSS</a>
-    </h1>
-  
-
-        
-        <a href="/笔记/转义与XSS/" class="archive-article-date">
-  	<time datetime="2016-07-19T01:43:48.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2016-07-19</time>
-</a>
-        
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <blockquote>
-<p>最近公司的新版本开发，由于后端代码的更迭，前端出现了不少的xss漏洞，这里总结一下关于xss漏洞和前端转义的知识。<br>xss攻击，即跨站脚本攻击，是前端所遇到的最普遍的网络攻击，也是前端最常见并需要防护的攻击。<br>记得在今年年初，腾讯邮箱就出过一次xss漏洞，据说有开发者反馈到腾讯，才被发现解决，不过已经有黑客利用这个漏洞，到处发带有xss攻击的邮件，盗取了大量账号。可见，xss虽然简单，但攻击防不胜防，即使是腾讯这样的大公司也可能出现疏漏。而且一旦漏洞被黑客利用，直接就能通过获取cookie等手段盗取用户账号，引起重大损失。  </p>
-</blockquote>
-        
-          <a class="article-more-a" href="/笔记/转义与XSS/#more">more >></a>
-        
-      
-
-      
-    </div>
-    <div class="article-info article-info-index">
-      
-      
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color4">XSS</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">转义</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-      
-	<div class="article-category tagcloud">
-		<i class="icon-book icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="/categories/笔记//" class="article-tag-list-link color3">笔记</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-
-      
-        <p class="article-more-link">
-          <a class="article-more-a" href="/笔记/转义与XSS/">展开全文 >></a>
-        </p>
-      
-
-      
-      <div class="clearfix"></div>
-    </div>
-  </div>
-</article>
-
-<aside class="wrap-side-operation">
-    <div class="mod-side-operation">
-        
-        <div class="jump-container" id="js-jump-container" style="display:none;">
-            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
-                <i class="icon-font icon-back"></i>
-            </a>
-            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
-                <i class="icon-font icon-plane jump-plane"></i>
-            </div>
-        </div>
-        
-        
-    </div>
-</aside>
-
-
-
-
-  
   
     <nav id="page-nav">
       <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="extend next" rel="next" href="/page/2/">Next &raquo;</a>
@@ -1064,15 +1057,15 @@ return o(i(t),arguments.length<2?void 0:u(arguments[1]))}})},function(t,n,r){var
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">cmd node</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">jquery</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">备忘</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">cmd node</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1093,6 +1086,10 @@ return o(i(t),arguments.length<2?void 0:u(arguments[1]))}})},function(t,n,r){var
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">react-native</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">react</a>
               </li>
              
               <li class="article-tag-list-item">
