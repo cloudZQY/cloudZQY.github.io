@@ -157,6 +157,80 @@
           <div id="js-content" class="content-ll">
             
   
+    <article id="post-mobx踩坑：Observer组件" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/uncategorized/mobx踩坑：Observer组件/">mobx踩坑：Observer组件</a>
+    </h1>
+  
+
+        
+        <a href="/uncategorized/mobx踩坑：Observer组件/" class="archive-article-date">
+  	<time datetime="2018-02-05T06:31:14.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2018-02-05</time>
+</a>
+        
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>在使用mobx的时候遇到不触发更新的情况，通常都是对mobx的可观测对象理解有误。不过mobx的文档的确不错，把常用的坑都列出来了。<br><figure class="highlight javascript"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">import</span> React, &#123; Component &#125; <span class="keyword">from</span> <span class="string">'react'</span>;</div><div class="line"><span class="keyword">import</span> &#123; observer, Observable &#125; <span class="keyword">from</span> <span class="string">'mobx-react'</span>;</div><div class="line">@observer MyCom extends Component &#123;</div><div class="line">  render() &#123;</div><div class="line">    <span class="keyword">return</span> (</div><div class="line">      &lt;Wrap</div><div class="line">        Com1=&#123;&lt;input value=&#123;store.value&#125; /&gt;&#125; <span class="comment">// 这种使用方法没有问题</span></div><div class="line">        Com2=&#123;() =&gt; <span class="xml"><span class="tag">&lt;<span class="name">input</span> <span class="attr">value</span>=<span class="string">&#123;store.value&#125;</span> /&gt;</span>&#125; // 在Warp没有@observer的情况下，这种使用方法将不会触发更新，因为input已经处于Wrap的组件内，而Wrap并没有被observer</span></div><div class="line">        Com3=&#123;() =&gt; &lt;Observable&gt;&#123;() =&gt; &lt;input value=&#123;store.value&#125;&gt;&#125;&lt;/Observable&gt;&#125; // 上面的情况需要使用这种</div><div class="line">      /&gt;</div><div class="line">    )</div><div class="line">  &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+
+      
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">mobx 踩坑</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+      
+
+      
+        <p class="article-more-link">
+          <a class="article-more-a" href="/uncategorized/mobx踩坑：Observer组件/">展开全文 >></a>
+        </p>
+      
+
+      
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
     <article id="post-在react中使用mobx，浅析mobx-react源码" class="article article-type-post  article-index" itemscope itemprop="blogPost">
   <div class="article-inner">
     
@@ -867,95 +941,6 @@
 
 
   
-    <article id="post-gulp自动化系列—jsdoc注释文档" class="article article-type-post  article-index" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/笔记/gulp自动化系列—jsdoc注释文档/">gulp自动化系列—jsdoc注释文档</a>
-    </h1>
-  
-
-        
-        <a href="/笔记/gulp自动化系列—jsdoc注释文档/" class="archive-article-date">
-  	<time datetime="2016-09-22T03:01:23.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2016-09-22</time>
-</a>
-        
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <blockquote>
-<p>jsdoc是根据js注释快速生成API文档的工具。好的api文档能大大提高效率，在使用公共组件时，直接按照文档来，而不用去看源码注释。<br>生成的文档是html，还可以选择各种主题模板，不过需要学习特定的注释格式，在现在流行的IDE中基本都有jsdoc的插件，使用起来还是挺方便的。<br>在使用gulp的项目中，利用gulp-jsdoc3可以将gulp和jsdoc结合起来，实现快速自动构建文档。</p>
-</blockquote>
-        
-          <a class="article-more-a" href="/笔记/gulp自动化系列—jsdoc注释文档/#more">more >></a>
-        
-      
-
-      
-    </div>
-    <div class="article-info article-info-index">
-      
-      
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">gulp自动化</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-      
-	<div class="article-category tagcloud">
-		<i class="icon-book icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="/categories/笔记//" class="article-tag-list-link color3">笔记</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-
-      
-        <p class="article-more-link">
-          <a class="article-more-a" href="/笔记/gulp自动化系列—jsdoc注释文档/">展开全文 >></a>
-        </p>
-      
-
-      
-      <div class="clearfix"></div>
-    </div>
-  </div>
-</article>
-
-<aside class="wrap-side-operation">
-    <div class="mod-side-operation">
-        
-        <div class="jump-container" id="js-jump-container" style="display:none;">
-            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
-                <i class="icon-font icon-back"></i>
-            </a>
-            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
-                <i class="icon-font icon-plane jump-plane"></i>
-            </div>
-        </div>
-        
-        
-    </div>
-</aside>
-
-
-
-
-  
   
     <nav id="page-nav">
       <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="extend next" rel="next" href="/page/2/">Next &raquo;</a>
@@ -1057,15 +1042,15 @@ return o(i(t),arguments.length<2?void 0:u(arguments[1]))}})},function(t,n,r){var
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">备忘</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">jquery</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">cmd node</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">备忘</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1089,11 +1074,15 @@ return o(i(t),arguments.length<2?void 0:u(arguments[1]))}})},function(t,n,r){var
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">react-ntaive</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">react</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">react-ntaive</a>
+                <a href="javascript:void(0)" class="js-tag color3">mobx 踩坑</a>
               </li>
             
             <div class="clearfix"></div>
