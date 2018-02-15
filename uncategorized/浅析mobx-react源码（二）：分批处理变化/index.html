@@ -6,18 +6,20 @@
   <meta name="renderer" content="webkit">
   <meta http-equiv="X-UA-Compatible" content="IE=edge" >
   <link rel="dns-prefetch" href="http://www.cloudzqy.space">
-  <title>Tag: react-native | blog</title>
+  <title>浅析mobx-react源码（二）：分批处理变化 | blog</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="前端 博客">
-<meta property="og:type" content="website">
-<meta property="og:title" content="blog">
-<meta property="og:url" content="http://www.cloudzqy.space/tags/react-native/index.html">
+  <meta name="description" content="前言当我们选择使用一个新的工具，一定是他解决了一定的痛点，在上一篇文章中，mobx的自动追踪依赖依赖，帮我们在毫不费力地情况下近乎完美的解决了一个组件对state的依赖，基本可以让shouldComponentUpdate在你的代码里消失。而这次介绍的特性则解决了setState的一些副作用。 setState副作用熟练使用react的同学一定对setState的坑有一定的了解，首先最重要的肯">
+<meta name="keywords" content="react mobx">
+<meta property="og:type" content="article">
+<meta property="og:title" content="浅析mobx-react源码（二）：分批处理变化">
+<meta property="og:url" content="http://www.cloudzqy.space/uncategorized/浅析mobx-react源码（二）：分批处理变化/index.html">
 <meta property="og:site_name" content="blog">
-<meta property="og:description" content="前端 博客">
+<meta property="og:description" content="前言当我们选择使用一个新的工具，一定是他解决了一定的痛点，在上一篇文章中，mobx的自动追踪依赖依赖，帮我们在毫不费力地情况下近乎完美的解决了一个组件对state的依赖，基本可以让shouldComponentUpdate在你的代码里消失。而这次介绍的特性则解决了setState的一些副作用。 setState副作用熟练使用react的同学一定对setState的坑有一定的了解，首先最重要的肯">
 <meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2018-02-15T03:16:34.000Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="blog">
-<meta name="twitter:description" content="前端 博客">
+<meta name="twitter:title" content="浅析mobx-react源码（二）：分批处理变化">
+<meta name="twitter:description" content="前言当我们选择使用一个新的工具，一定是他解决了一定的痛点，在上一篇文章中，mobx的自动追踪依赖依赖，帮我们在毫不费力地情况下近乎完美的解决了一个组件对state的依赖，基本可以让shouldComponentUpdate在你的代码里消失。而这次介绍的特性则解决了setState的一些副作用。 setState副作用熟练使用react的同学一定对setState的坑有一定的了解，首先最重要的肯">
   
     <link rel="alternative" href="/atom.xml" title="blog" type="application/atom+xml">
   
@@ -155,158 +157,170 @@
             <canvas data-colors="#eaeaea" data-sectionHeight="100" data-contentId="js-content" id="myCanvas1" class="anm-canvas"></canvas>
           </div>
           <div id="js-content" class="content-ll">
-            
-  
-  
+            <article id="post-浅析mobx-react源码（二）：分批处理变化" class="article article-type-post " itemscope itemprop="blogPost">
+  <div class="article-inner">
     
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      浅析mobx-react源码（二）：分批处理变化
+    </h1>
+  
+
+        
+        <a href="/uncategorized/浅析mobx-react源码（二）：分批处理变化/" class="archive-article-date">
+  	<time datetime="2018-02-12T04:47:54.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2018-02-12</time>
+</a>
+        
+      </header>
     
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>当我们选择使用一个新的工具，一定是他解决了一定的痛点，在上一篇文章中，mobx的自动追踪依赖依赖，帮我们在毫不费力地情况下近乎完美的解决了一个组件对state的依赖，基本可以让shouldComponentUpdate在你的代码里消失。而这次介绍的特性则解决了setState的一些<strong>副作用</strong>。<br></p>
+<h2 id="setState副作用"><a href="#setState副作用" class="headerlink" title="setState副作用"></a>setState副作用</h2><p>熟练使用react的同学一定对setState的坑有一定的了解，首先最重要的肯定就是:<br><strong>1. setState是异步的</strong>。<br><figure class="highlight javascript"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="built_in">console</span>.log(<span class="keyword">this</span>.state.num); <span class="comment">// 1</span></div><div class="line"><span class="keyword">this</span>.setState(&#123;</div><div class="line">  num: <span class="keyword">this</span>.state.num + <span class="number">1</span>,</div><div class="line">&#125;);</div><div class="line"><span class="built_in">console</span>.log(<span class="keyword">this</span>.state.num) <span class="comment">// 1</span></div></pre></td></tr></table></figure></p>
+<p>这是新手最容易碰到的坑了，react为了达到高效的处理setState引起的重绘，会将一次同步执行的所有setState放到一个队列中，在最后进行合并，并最终只调用一次render。所以在使用setState时，经常需要在第二个参数传入回调来处理改变后的state，这就非常的不优雅。  </p>
+<p><strong>2. setState会造成不必要的渲染</strong><br>当setState改变的state实际上并没有发生改变时，也会触发render。<br><figure class="highlight javascript"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="built_in">console</span>.log(<span class="keyword">this</span>.state.num); <span class="comment">// 1</span></div><div class="line"><span class="keyword">this</span>.setState(&#123;</div><div class="line">  num: <span class="number">1</span>,</div><div class="line">&#125;);</div><div class="line"><span class="comment">// 触发重绘</span></div></pre></td></tr></table></figure></p>
+<p>这种逻辑经常夹杂在业务中，在shouldComponentUpdate中很难处理，通常要在setState之前要对改变的state与之前的state进行比较，来控制是否需要setState。</p>
+<h2 id="Mobx特性1：避免多次重绘"><a href="#Mobx特性1：避免多次重绘" class="headerlink" title="Mobx特性1：避免多次重绘"></a>Mobx特性1：避免多次重绘</h2><p>当我们如上篇文章的源码所说，普通地将react的render改造，同样会有多次render的情况。比如在同步线程中多次修改state。<br><figure class="highlight javascript"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">Store</span> </span>&#123;</div><div class="line">  @observable</div><div class="line">  num = <span class="number">1</span>;</div><div class="line">&#125;</div><div class="line"><span class="keyword">const</span> store = <span class="keyword">new</span> Store();</div><div class="line"></div><div class="line">reaction(<span class="function"><span class="params">()</span> =&gt;</span> store.num, (num) =&gt; &#123;</div><div class="line">  <span class="comment">// 类似render调用</span></div><div class="line">  <span class="built_in">console</span>.log(num);</div><div class="line">&#125;)</div><div class="line"></div><div class="line">store.num++; <span class="comment">// 2</span></div><div class="line">store.num++; <span class="comment">// 3</span></div><div class="line">store.num++; <span class="comment">// 4</span></div><div class="line">store.num++; <span class="comment">// 5</span></div></pre></td></tr></table></figure></p>
+<p>将会多次调用console.log，但实际我们所需要的其实只有最后一次。所以mobx提供了一个方法action，使用action包裹所有的操作。<br><figure class="highlight javascript"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">Store</span> </span>&#123;</div><div class="line">  @observable</div><div class="line">  num = <span class="number">1</span>;</div><div class="line">&#125;</div><div class="line"><span class="keyword">const</span> store = <span class="keyword">new</span> Store();</div><div class="line"></div><div class="line">reaction(<span class="function"><span class="params">()</span> =&gt;</span> store.num, (num) =&gt; &#123;</div><div class="line">  <span class="built_in">console</span>.log(num);</div><div class="line">&#125;)</div><div class="line"></div><div class="line">action(<span class="function"><span class="params">()</span> =&gt;</span> &#123;</div><div class="line">  store.num++; <span class="comment">// 无反应</span></div><div class="line">  store.num++; <span class="comment">// 无反应</span></div><div class="line">  store.num++; <span class="comment">// 无反应</span></div><div class="line">  store.num++; <span class="comment">// 输出5</span></div><div class="line">&#125;)</div></pre></td></tr></table></figure></p>
+<p>在这种情况下，只有在所有操作结束的时候才会触发console.log。其实原理很简单，在mobx源码<code>./core/action</code>里面<br><figure class="highlight javascript"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div></pre></td><td class="code"><pre><div class="line"><span class="comment">// ./core/action.ts</span></div><div class="line"><span class="function"><span class="keyword">function</span> <span class="title">startAction</span>(<span class="params"></span></span></div><div class="line"><span class="function"><span class="params">    actionName: string,</span></span></div><div class="line"><span class="function"><span class="params">    fn: Function,</span></span></div><div class="line"><span class="function"><span class="params">    scope: any,</span></span></div><div class="line"><span class="function"><span class="params">    args?: IArguments</span></span></div><div class="line"><span class="function"><span class="params"></span>): <span class="title">IActionRunInfo</span> </span>&#123;</div><div class="line">    <span class="comment">/// ...</span></div><div class="line">    <span class="comment">// untrackedStart控制开始</span></div><div class="line">    <span class="keyword">const</span> prevDerivation = untrackedStart()</div><div class="line">    startBatch()</div><div class="line">    <span class="keyword">const</span> prevAllowStateChanges = allowStateChangesStart(<span class="literal">true</span>)</div><div class="line">    <span class="keyword">return</span> &#123;</div><div class="line">        prevDerivation,</div><div class="line">        prevAllowStateChanges,</div><div class="line">        notifySpy,</div><div class="line">        startTime</div><div class="line">    &#125;</div><div class="line">&#125;</div><div class="line"><span class="function"><span class="keyword">function</span> <span class="title">endAction</span>(<span class="params">runInfo: IActionRunInfo</span>) </span>&#123;</div><div class="line">    allowStateChangesEnd(runInfo.prevAllowStateChanges)</div><div class="line">    endBatch()</div><div class="line">    <span class="comment">// untrackedEnd控制结束</span></div><div class="line">    untrackedEnd(runInfo.prevDerivation)</div><div class="line">    <span class="keyword">if</span> (runInfo.notifySpy) spyReportEnd(&#123; <span class="attr">time</span>: <span class="built_in">Date</span>.now() - runInfo.startTime &#125;)</div><div class="line">&#125;</div><div class="line"><span class="keyword">export</span> <span class="function"><span class="keyword">function</span> <span class="title">executeAction</span>(<span class="params">actionName: string, fn: Function, scope?: any, args?: IArguments</span>) </span>&#123;</div><div class="line">    <span class="comment">// 开始执行action</span></div><div class="line">    <span class="keyword">const</span> runInfo = startAction(actionName, fn, scope, args)</div><div class="line">    <span class="keyword">try</span> &#123;</div><div class="line">        <span class="comment">// 执行action传入的回调</span></div><div class="line">        <span class="keyword">return</span> fn.apply(scope, args)</div><div class="line">    &#125; <span class="keyword">finally</span> &#123;</div><div class="line">        <span class="comment">// 结束action</span></div><div class="line">        endAction(runInfo)</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>通过untrackedStart和untrackedEnd表示开始和结束分别在传入action的回调执行前后<br><figure class="highlight javascript"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line"><span class="comment">// ./core/derivation.ts</span></div><div class="line"><span class="keyword">export</span> <span class="function"><span class="keyword">function</span> <span class="title">untrackedStart</span>(<span class="params"></span>): <span class="title">IDerivation</span> | <span class="title">null</span> </span>&#123;</div><div class="line">    <span class="keyword">const</span> prev = globalState.trackingDerivation</div><div class="line">    globalState.trackingDerivation = <span class="literal">null</span></div><div class="line">    <span class="keyword">return</span> prev</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="keyword">export</span> <span class="function"><span class="keyword">function</span> <span class="title">untrackedEnd</span>(<span class="params">prev: IDerivation | null</span>) </span>&#123;</div><div class="line">    globalState.trackingDerivation = prev</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>untrackedStart和untrackedEnd控制一个全局的变量trackingDerivation。然后在需要执行的地方，只有在trackingDerivation的时候才触发。<br>根据上面的特性，我们在使用mobx-react的时候，只需要将所有直接改变state的方法用action包裹就行了。<strong>但是</strong>真实情况并不是这样，其实不使用action，也能达到同样的效果。因为在mobx-react中，已经对此做过处理，我们来看看源码。<br><figure class="highlight javascript"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div></pre></td><td class="code"><pre><div class="line"><span class="comment">// mobx-react ./src/index.js</span></div><div class="line"><span class="keyword">import</span> &#123; extras, spy &#125; <span class="keyword">from</span> <span class="string">"mobx"</span></div><div class="line"><span class="keyword">import</span> &#123; Component &#125; <span class="keyword">from</span> <span class="string">"react"</span></div><div class="line"><span class="keyword">import</span> &#123; unstable_batchedUpdates <span class="keyword">as</span> rdBatched &#125; <span class="keyword">from</span> <span class="string">"react-dom"</span></div><div class="line"><span class="keyword">import</span> &#123; unstable_batchedUpdates <span class="keyword">as</span> rnBatched &#125; <span class="keyword">from</span> <span class="string">"react-native"</span></div><div class="line"></div><div class="line"><span class="keyword">if</span> (!Component) <span class="keyword">throw</span> <span class="keyword">new</span> <span class="built_in">Error</span>(<span class="string">"mobx-react requires React to be available"</span>)</div><div class="line"><span class="keyword">if</span> (!extras) <span class="keyword">throw</span> <span class="keyword">new</span> <span class="built_in">Error</span>(<span class="string">"mobx-react requires mobx to be available"</span>)</div><div class="line"></div><div class="line"><span class="comment">// 将reactionScheduler和react-dom的batchedUpdates绑定</span></div><div class="line"><span class="comment">// 当mobx运行runReactions的时候都会执行batchedUpdates</span></div><div class="line"><span class="comment">// batchedUpdates会控制isBatchingUpdates变量，来阻止react-dom的render，直到执行结束。</span></div><div class="line"><span class="keyword">if</span> (<span class="keyword">typeof</span> rdBatched === <span class="string">"function"</span>) extras.setReactionScheduler(rdBatched)</div><div class="line"><span class="keyword">else</span> <span class="keyword">if</span> (<span class="keyword">typeof</span> rnBatched === <span class="string">"function"</span>) extras.setReactionScheduler(rnBatched)</div></pre></td></tr></table></figure></p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line"><span class="comment">// mobx</span></div><div class="line"><span class="function"><span class="keyword">function</span> <span class="title">setReactionScheduler</span>(<span class="params">fn</span>) </span>&#123;</div><div class="line">    <span class="keyword">var</span> baseScheduler = reactionScheduler;</div><div class="line">    reactionScheduler = <span class="function"><span class="keyword">function</span> (<span class="params">f</span>) </span>&#123; <span class="keyword">return</span> fn(<span class="function"><span class="keyword">function</span> (<span class="params"></span>) </span>&#123; <span class="keyword">return</span> baseScheduler(f); &#125;); &#125;;</div><div class="line">&#125;</div><div class="line"><span class="function"><span class="keyword">function</span> <span class="title">runReactions</span>(<span class="params"></span>) </span>&#123;</div><div class="line">    <span class="comment">// Trampolining, if runReactions are already running, new reactions will be picked up</span></div><div class="line">    <span class="keyword">if</span> (globalState.inBatch &gt; <span class="number">0</span> || globalState.isRunningReactions)</div><div class="line">        <span class="keyword">return</span>;</div><div class="line">    reactionScheduler(runReactionsHelper);</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line"><span class="comment">// react-dom</span></div><div class="line"><span class="function"><span class="keyword">function</span> <span class="title">batchedUpdates</span>(<span class="params">fn, a</span>) </span>&#123;</div><div class="line"><span class="keyword">var</span> previousIsBatchingUpdates = isBatchingUpdates;</div><div class="line">isBatchingUpdates = <span class="literal">true</span>;</div><div class="line"><span class="keyword">try</span> &#123;</div><div class="line">    <span class="keyword">return</span> fn(a);</div><div class="line">&#125; <span class="keyword">finally</span> &#123;</div><div class="line">    isBatchingUpdates = previousIsBatchingUpdates;</div><div class="line">    <span class="keyword">if</span> (!isBatchingUpdates &amp;&amp; !isRendering) &#123;</div><div class="line">    performWork(Sync, <span class="literal">null</span>);</div><div class="line">    &#125;</div><div class="line">&#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>因此在使用mobx-react，多次改变state的时候，只会在最后render一次，而在执行中，store的state已经改变，可以直接取到，不用像state一样使用回调。但是在实际使用中还是建议使用action来包裹，因为这样会便于使用mobx的调试工具调试。</p>
+<h2 id="Mobx特性2：值未改变时不触发autorun"><a href="#Mobx特性2：值未改变时不触发autorun" class="headerlink" title="Mobx特性2：值未改变时不触发autorun"></a>Mobx特性2：值未改变时不触发autorun</h2><p>由于mobx的特性，在改变state时比较新值和旧值来避免触发reaction就比较简单了。<br><figure class="highlight javascript"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">Store</span> </span>&#123;</div><div class="line">  @observable num = <span class="number">1</span>;</div><div class="line">  @observable checkbox = &#123;</div><div class="line">      checked: <span class="literal">true</span>,</div><div class="line">  &#125;</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="keyword">var</span> store = <span class="keyword">new</span> Store();</div><div class="line">autorun(<span class="function"><span class="params">()</span> =&gt;</span> &#123;</div><div class="line">  <span class="built_in">console</span>.log(store.num);</div><div class="line">  <span class="built_in">console</span>.log(stroe.checkbox.checked);</div><div class="line">&#125;)</div><div class="line">store.num = <span class="number">1</span>; <span class="comment">// 不触发autorun</span></div><div class="line">store.checkbox.checked = <span class="literal">true</span>; <span class="comment">// 不触发autorun</span></div></pre></td></tr></table></figure></p>
+<p>利用这个特性也可以避免react的一些不必要的重绘，优化性能。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>在使用mobx之后，我们基本可以抛弃react的setState。这样不仅集成了setState的优点：在一个同步线程中只执行一次render。而且还能避免setState的异步改变state等缺点。</p>
+
+      
+
+      
+    </div>
+    <div class="article-info article-info-index">
       
       
-      <section class="archives-wrap">
-        <div class="archive-year-wrap">
-          <a href="/archives/2017" class="archive-year">2017</a>
-        </div>
-        <div class="archives">
-    
-    <article class="archive-article archive-type-react-native">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      	<div class="article-meta">
-	      	<a href="/uncategorized/react-native之icon解决方案（svg）/" class="archive-article-date">
-  	<time datetime="2017-03-26T11:59:24.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2017-03-26</time>
-</a>
-        </div>
-    	 
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/uncategorized/react-native之icon解决方案（svg）/">icon解决方案（svg）</a>
-    </h1>
-  
-
-        <div class="article-info info-on-right">
-          
 	<div class="article-tag tagcloud">
 		<i class="icon-price-tags icon"></i>
 		<ul class="article-tag-list">
 			 
         		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">react-native</a>
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">react mobx</a>
         		</li>
       		
 		</ul>
 	</div>
 
-          
+      
 
+      
+
+      
+        
+<div class="share-btn share-icons tooltip-left">
+  <div class="tooltip tooltip-east">
+    <span class="tooltip-item">
+      <a href="javascript:;" class="share-sns share-outer">
+        <i class="icon icon-share"></i>
+      </a>
+    </span>
+    <span class="tooltip-content">
+      <div class="share-wrap">
+        <div class="share-icons">
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="icon icon-weibo"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="icon icon-weixin"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="icon icon-qq"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="icon icon-douban"></i>
+          </a>
+          <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a>
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="icon icon-facebook"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="icon icon-twitter"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="icon icon-google"></i>
+          </a>
         </div>
-        <div class="clearfix"></div>
-    </header>
+      </div>
+    </span>
+  </div>
+</div>
+
+<div class="page-modal wx-share js-wx-box">
+    <a class="close js-modal-close" href="javascript:;"><i class="icon icon-close"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//pan.baidu.com/share/qrcode?url=http://www.cloudzqy.space/uncategorized/浅析mobx-react源码（二）：分批处理变化/" alt="微信分享二维码">
+    </div>
+</div>
+
+<div class="mask js-mask"></div>
+      
+      <div class="clearfix"></div>
+    </div>
   </div>
 </article>
+
   
-    
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      	<div class="article-meta">
-	      	<a href="/笔记/React-Native之如何创建一个自适应高度的TextInput/" class="archive-article-date">
-  	<time datetime="2017-03-02T13:36:28.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2017-03-02</time>
-</a>
+<nav id="article-nav">
+  
+    <a href="/uncategorized/记录移动布局概念/" id="article-nav-newer" class="article-nav-link-wrap">
+      <i class="icon-circle-left"></i>
+      <div class="article-nav-title">
+        
+          记录移动布局概念
+        
+      </div>
+    </a>
+  
+  
+    <a href="/uncategorized/mobx踩坑：Observer组件/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">mobx踩坑：Observer组件</div>
+      <i class="icon-circle-right"></i>
+    </a>
+  
+</nav>
+
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
         </div>
-    	 
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/笔记/React-Native之如何创建一个自适应高度的TextInput/">React-Native之如何创建一个自适应高度的TextInput</a>
-    </h1>
-  
-
-        <div class="article-info info-on-right">
-          
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">react-native</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-          
-	<div class="article-category tagcloud">
-		<i class="icon-book icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="/categories/笔记//" class="article-tag-list-link color3">笔记</a>
-        		</li>
-      		
-		</ul>
-	</div>
+        
+        
+    </div>
+</aside>
 
 
-        </div>
-        <div class="clearfix"></div>
-    </header>
-  </div>
-</article>
-  
-    
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      	<div class="article-meta">
-	      	<a href="/笔记/如何封装React-Native的Modal/" class="archive-article-date">
-  	<time datetime="2017-02-26T04:22:11.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2017-02-26</time>
-</a>
-        </div>
-    	 
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/笔记/如何封装React-Native的Modal/">如何封装React-Native的Modal</a>
-    </h1>
-  
 
-        <div class="article-info info-on-right">
-          
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">react-native</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-          
-	<div class="article-category tagcloud">
-		<i class="icon-book icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="/categories/笔记//" class="article-tag-list-link color3">笔记</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-
-        </div>
-        <div class="clearfix"></div>
-    </header>
-  </div>
-</article>
   
   
-    </div></section>
   
 
-    
+  
+
+  
+
+  
 
 
           </div>
@@ -329,9 +343,9 @@
 	var yiliaConfig = {
 		mathjax: false,
 		isHome: false,
-		isPost: false,
+		isPost: true,
 		isArchive: false,
-		isTag: true,
+		isTag: false,
 		isCategory: false,
 		open_in_new: false,
 		toc_hide_index: true,
