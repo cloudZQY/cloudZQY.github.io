@@ -8,18 +8,18 @@
   <link rel="dns-prefetch" href="http://www.cloudzqy.space">
   <title>浅析mobx-react源码（二）：分批处理变化 | blog</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="前言当我们选择使用一个新的工具，一定是他解决了一定的痛点，在上一篇文章中，mobx的自动追踪依赖依赖，帮我们在毫不费力地情况下近乎完美的解决了一个组件对state的依赖，基本可以让shouldComponentUpdate在你的代码里消失。而这次介绍的特性则解决了setState的一些副作用。 setState副作用熟练使用react的同学一定对setState的坑有一定的了解，首先最重要的肯">
+  <meta name="description" content="前言当我们选择使用一个新的工具，一定是他解决了一定的痛点，在上一篇文章中，mobx的自动追踪依赖依赖，帮我们在毫不费力地情况下近乎完美的解决了一个组件对state的依赖，基本可以让shouldComponentUpdate在你的代码里消失。而这次介绍的特性则解决了setState的一些副作用。">
 <meta name="keywords" content="react mobx">
 <meta property="og:type" content="article">
 <meta property="og:title" content="浅析mobx-react源码（二）：分批处理变化">
 <meta property="og:url" content="http://www.cloudzqy.space/uncategorized/浅析mobx-react源码（二）：分批处理变化/index.html">
 <meta property="og:site_name" content="blog">
-<meta property="og:description" content="前言当我们选择使用一个新的工具，一定是他解决了一定的痛点，在上一篇文章中，mobx的自动追踪依赖依赖，帮我们在毫不费力地情况下近乎完美的解决了一个组件对state的依赖，基本可以让shouldComponentUpdate在你的代码里消失。而这次介绍的特性则解决了setState的一些副作用。 setState副作用熟练使用react的同学一定对setState的坑有一定的了解，首先最重要的肯">
+<meta property="og:description" content="前言当我们选择使用一个新的工具，一定是他解决了一定的痛点，在上一篇文章中，mobx的自动追踪依赖依赖，帮我们在毫不费力地情况下近乎完美的解决了一个组件对state的依赖，基本可以让shouldComponentUpdate在你的代码里消失。而这次介绍的特性则解决了setState的一些副作用。">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2018-02-15T03:16:34.000Z">
+<meta property="og:updated_time" content="2018-02-15T03:18:00.000Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="浅析mobx-react源码（二）：分批处理变化">
-<meta name="twitter:description" content="前言当我们选择使用一个新的工具，一定是他解决了一定的痛点，在上一篇文章中，mobx的自动追踪依赖依赖，帮我们在毫不费力地情况下近乎完美的解决了一个组件对state的依赖，基本可以让shouldComponentUpdate在你的代码里消失。而这次介绍的特性则解决了setState的一些副作用。 setState副作用熟练使用react的同学一定对setState的坑有一定的了解，首先最重要的肯">
+<meta name="twitter:description" content="前言当我们选择使用一个新的工具，一定是他解决了一定的痛点，在上一篇文章中，mobx的自动追踪依赖依赖，帮我们在毫不费力地情况下近乎完美的解决了一个组件对state的依赖，基本可以让shouldComponentUpdate在你的代码里消失。而这次介绍的特性则解决了setState的一些副作用。">
   
     <link rel="alternative" href="/atom.xml" title="blog" type="application/atom+xml">
   
@@ -177,7 +177,9 @@
     
     <div class="article-entry" itemprop="articleBody">
       
-        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>当我们选择使用一个新的工具，一定是他解决了一定的痛点，在上一篇文章中，mobx的自动追踪依赖依赖，帮我们在毫不费力地情况下近乎完美的解决了一个组件对state的依赖，基本可以让shouldComponentUpdate在你的代码里消失。而这次介绍的特性则解决了setState的一些<strong>副作用</strong>。<br></p>
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>当我们选择使用一个新的工具，一定是他解决了一定的痛点，在上一篇文章中，mobx的自动追踪依赖依赖，帮我们在毫不费力地情况下近乎完美的解决了一个组件对state的依赖，基本可以让shouldComponentUpdate在你的代码里消失。而这次介绍的特性则解决了setState的一些<strong>副作用</strong>。</p>
+<a id="more"></a>
+<p></p>
 <h2 id="setState副作用"><a href="#setState副作用" class="headerlink" title="setState副作用"></a>setState副作用</h2><p>熟练使用react的同学一定对setState的坑有一定的了解，首先最重要的肯定就是:<br><strong>1. setState是异步的</strong>。<br><figure class="highlight javascript"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="built_in">console</span>.log(<span class="keyword">this</span>.state.num); <span class="comment">// 1</span></div><div class="line"><span class="keyword">this</span>.setState(&#123;</div><div class="line">  num: <span class="keyword">this</span>.state.num + <span class="number">1</span>,</div><div class="line">&#125;);</div><div class="line"><span class="built_in">console</span>.log(<span class="keyword">this</span>.state.num) <span class="comment">// 1</span></div></pre></td></tr></table></figure></p>
 <p>这是新手最容易碰到的坑了，react为了达到高效的处理setState引起的重绘，会将一次同步执行的所有setState放到一个队列中，在最后进行合并，并最终只调用一次render。所以在使用setState时，经常需要在第二个参数传入回调来处理改变后的state，这就非常的不优雅。  </p>
 <p><strong>2. setState会造成不必要的渲染</strong><br>当setState改变的state实际上并没有发生改变时，也会触发render。<br><figure class="highlight javascript"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="built_in">console</span>.log(<span class="keyword">this</span>.state.num); <span class="comment">// 1</span></div><div class="line"><span class="keyword">this</span>.setState(&#123;</div><div class="line">  num: <span class="number">1</span>,</div><div class="line">&#125;);</div><div class="line"><span class="comment">// 触发重绘</span></div></pre></td></tr></table></figure></p>
@@ -421,11 +423,15 @@ return o(i(t),arguments.length<2?void 0:u(arguments[1]))}})},function(t,n,r){var
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">备忘</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">cmd node</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">备忘</a>
+                <a href="javascript:void(0)" class="js-tag color3">node 异步</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -434,10 +440,6 @@ return o(i(t),arguments.length<2?void 0:u(arguments[1]))}})},function(t,n,r){var
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">转义</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">node 异步</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -457,15 +459,15 @@ return o(i(t),arguments.length<2?void 0:u(arguments[1]))}})},function(t,n,r){var
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">react</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">react mobx</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">移动web</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">react</a>
               </li>
             
             <div class="clearfix"></div>
