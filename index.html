@@ -307,7 +307,7 @@ if (typeof module !== "undefined" && module.exports) {
                 */
                 getUserMedia: function (videoEnable, audioEnable, callback) {
                     navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia
-                    || navigator.msGetUserMedia || window.getUserMedia;
+                    || navigator.msGetUserMedia || window.getUserMedia || (navigator.mediaDevices || {}).getUserMedia;
                     var constraints = {video: videoEnable, audio: audioEnable};
                     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
                         navigator.mediaDevices.getUserMedia(constraints).then(function (stream) {
