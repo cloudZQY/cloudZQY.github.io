@@ -3,196 +3,6 @@
 
 <head>
     <title>video recoder</title>
-    <script>
-	/* FileSaver.js
- * A saveAs() FileSaver implementation.
- * 1.3.2
- * 2016-06-16 18:25:19
- *
- * By Eli Grey, http://eligrey.com
- * License: MIT
- *   See https://github.com/eligrey/FileSaver.js/blob/master/LICENSE.md
- */
-
-/*global self */
-/*jslint bitwise: true, indent: 4, laxbreak: true, laxcomma: true, smarttabs: true, plusplus: true */
-
-/*! @source http://purl.eligrey.com/github/FileSaver.js/blob/master/FileSaver.js */
-
-var saveAs = saveAs || (function(view) {
-    "use strict";
-    // IE <10 is explicitly unsupported
-    if (typeof view === "undefined" || typeof navigator !== "undefined" && /MSIE [1-9]\./.test(navigator.userAgent)) {
-        return;
-    }
-    var
-          doc = view.document
-          // only get URL when necessary in case Blob.js hasn't overridden it yet
-        , get_URL = function() {
-            return view.URL || view.webkitURL || view;
-        }
-        , save_link = doc.createElementNS("http://www.w3.org/1999/xhtml", "a")
-        , can_use_save_link = "download" in save_link
-        , click = function(node) {
-            var event = new MouseEvent("click");
-            node.dispatchEvent(event);
-        }
-        , is_safari = /constructor/i.test(view.HTMLElement) || view.safari
-        , is_chrome_ios =/CriOS\/[\d]+/.test(navigator.userAgent)
-        , throw_outside = function(ex) {
-            (view.setImmediate || view.setTimeout)(function() {
-                throw ex;
-            }, 0);
-        }
-        , force_saveable_type = "application/octet-stream"
-        // the Blob API is fundamentally broken as there is no "downloadfinished" event to subscribe to
-        , arbitrary_revoke_timeout = 1000 * 40 // in ms
-        , revoke = function(file) {
-            var revoker = function() {
-                if (typeof file === "string") { // file is an object URL
-                    get_URL().revokeObjectURL(file);
-                } else { // file is a File
-                    file.remove();
-                }
-            };
-            setTimeout(revoker, arbitrary_revoke_timeout);
-        }
-        , dispatch = function(filesaver, event_types, event) {
-            event_types = [].concat(event_types);
-            var i = event_types.length;
-            while (i--) {
-                var listener = filesaver["on" + event_types[i]];
-                if (typeof listener === "function") {
-                    try {
-                        listener.call(filesaver, event || filesaver);
-                    } catch (ex) {
-                        throw_outside(ex);
-                    }
-                }
-            }
-        }
-        , auto_bom = function(blob) {
-            // prepend BOM for UTF-8 XML and text/* types (including HTML)
-            // note: your browser will automatically convert UTF-16 U+FEFF to EF BB BF
-            if (/^\s*(?:text\/\S*|application\/xml|\S*\/\S*\+xml)\s*;.*charset\s*=\s*utf-8/i.test(blob.type)) {
-                return new Blob([String.fromCharCode(0xFEFF), blob], {type: blob.type});
-            }
-            return blob;
-        }
-        , FileSaver = function(blob, name, no_auto_bom) {
-            if (!no_auto_bom) {
-                blob = auto_bom(blob);
-            }
-            // First try a.download, then web filesystem, then object URLs
-            var
-                  filesaver = this
-                , type = blob.type
-                , force = type === force_saveable_type
-                , object_url
-                , dispatch_all = function() {
-                    dispatch(filesaver, "writestart progress write writeend".split(" "));
-                }
-                // on any filesys errors revert to saving with object URLs
-                , fs_error = function() {
-                    if ((is_chrome_ios || (force && is_safari)) && view.FileReader) {
-                        // Safari doesn't allow downloading of blob urls
-                        var reader = new FileReader();
-                        reader.onloadend = function() {
-                            var url = is_chrome_ios ? reader.result : reader.result.replace(/^data:[^;]*;/, 'data:attachment/file;');
-                            var popup = view.open(url, '_blank');
-                            if(!popup) view.location.href = url;
-                            url=undefined; // release reference before dispatching
-                            filesaver.readyState = filesaver.DONE;
-                            dispatch_all();
-                        };
-                        reader.readAsDataURL(blob);
-                        filesaver.readyState = filesaver.INIT;
-                        return;
-                    }
-                    // don't create more object URLs than needed
-                    if (!object_url) {
-                        object_url = get_URL().createObjectURL(blob);
-                    }
-                    if (force) {
-                        view.location.href = object_url;
-                    } else {
-                        var opened = view.open(object_url, "_blank");
-                        if (!opened) {
-                            // Apple does not allow window.open, see https://developer.apple.com/library/safari/documentation/Tools/Conceptual/SafariExtensionGuide/WorkingwithWindowsandTabs/WorkingwithWindowsandTabs.html
-                            view.location.href = object_url;
-                        }
-                    }
-                    filesaver.readyState = filesaver.DONE;
-                    dispatch_all();
-                    revoke(object_url);
-                }
-            ;
-            filesaver.readyState = filesaver.INIT;
-
-            if (can_use_save_link) {
-                object_url = get_URL().createObjectURL(blob);
-                setTimeout(function() {
-                    save_link.href = object_url;
-                    save_link.download = name;
-                    click(save_link);
-                    dispatch_all();
-                    revoke(object_url);
-                    filesaver.readyState = filesaver.DONE;
-                });
-                return;
-            }
-
-            fs_error();
-        }
-        , FS_proto = FileSaver.prototype
-        , saveAs = function(blob, name, no_auto_bom) {
-            return new FileSaver(blob, name || blob.name || "download", no_auto_bom);
-        }
-    ;
-    // IE 10+ (native saveAs)
-    if (typeof navigator !== "undefined" && navigator.msSaveOrOpenBlob) {
-        return function(blob, name, no_auto_bom) {
-            name = name || blob.name || "download";
-
-            if (!no_auto_bom) {
-                blob = auto_bom(blob);
-            }
-            return navigator.msSaveOrOpenBlob(blob, name);
-        };
-    }
-
-    FS_proto.abort = function(){};
-    FS_proto.readyState = FS_proto.INIT = 0;
-    FS_proto.WRITING = 1;
-    FS_proto.DONE = 2;
-
-    FS_proto.error =
-    FS_proto.onwritestart =
-    FS_proto.onprogress =
-    FS_proto.onwrite =
-    FS_proto.onabort =
-    FS_proto.onerror =
-    FS_proto.onwriteend =
-        null;
-
-    return saveAs;
-}(
-       typeof self !== "undefined" && self
-    || typeof window !== "undefined" && window
-    || this.content
-));
-// `self` is undefined in Firefox for Android content script context
-// while `this` is nsIContentFrameMessageManager
-// with an attribute `content` that corresponds to the window
-
-if (typeof module !== "undefined" && module.exports) {
-  module.exports.saveAs = saveAs;
-} else if ((typeof define !== "undefined" && define !== null) && (define.amd !== null)) {
-  define("FileSaver.js", function() {
-    return saveAs;
-  });
-}	
-</script>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
@@ -204,188 +14,74 @@ if (typeof module !== "undefined" && module.exports) {
     }
 </style>
 <body>
-    <article style="border:1px solid white;width:400px;height:400px;margin:0 auto;">
+    微信 <a href="weixin://">微信 </a>
+!发起群聊 <a href="weixin://dl/groupchat">!发起群聊 </a>
+通讯录
+!添加朋友 <a href="weixin://dl/add">!添加朋友 </a>
 
-        <section class="experiment" style="width:320px; height:240px;border:1px solid green; margin:50px auto;">
-            <div id="videos-container" style="width:320px; height:240px;">
-            </div>
-        </section>
-        <section class="experiment" style="text-align:center;border:none; margin-top:20px;">
-            <button id="openCamera">打开摄像头</button>
-            <button id="start-recording" disabled>开始录制</button>
-            <button id="save-recording" disabled>保存</button>
-            <!--<a href="javascript:void(0)" onclick="send()">发送</a>-->
-        </section>
- </article>
-<script>
-            var mediaStream;
-            var recorderFile;
-            var stopRecordCallback;
-            var openBtn = document.getElementById("openCamera");
-            var startBtn = document.getElementById("start-recording");
-            var saveBtn = document.getElementById("save-recording");
-            openBtn.onclick = function() {
-                this.disabled = true;
-                startBtn.disabled=false;
-                openCamera();
-            };
+上报日志 <a href="weixin://dl/log">上报日志 </a>
+新的朋友 <a href="weixin://dl/recommendation">新的朋友 </a>
 
-            startBtn.onclick = function() {
-                this.disabled = true;
-                startRecord();
-            };
+群聊 <a href="weixin://dl/groups">群聊 </a>
+标签 <a href="weixin://dl/tags">标签 </a>
+公众号 <a href="weixin://dl/officialaccounts">公众号 </a>
+发现
+朋友圈 <a href="weixin://dl/moments">朋友圈 </a>
+扫一扫 <a href="weixin://dl/scan">扫一扫 </a>
+购物（京东） <a href="weixin://dl/shopping">购物（京东） </a>
+游戏 <a href="weixin://dl/games">游戏 </a>
+我
+个人信息 <a href="weixin://dl/profile">个人信息 </a>
+名字 <a href="weixin://dl/setname">名字 </a>
+我的二维码 <a href="weixin://dl/myQRcode">我的二维码 </a>
+我的地址 <a href="weixin://dl/myaddress">我的地址 </a>
+相册 <a href="weixin://dl/posts">相册 </a>
+收藏 <a href="weixin://dl/favorites">收藏 </a>
+优惠券 <a href="weixin://dl/card">优惠券 </a>
+表情 <a href="weixin://dl/stickers">表情 </a>
+设置 <a href="weixin://dl/settings">设置 </a>
 
-            saveBtn.onclick = function() {
-                saver();
+QQ 号 <a href="weixin://dl/bindqq">QQ 号 </a>
+手机号 <a href="weixin://dl/bindmobile">手机号 </a>
+邮箱地址 <a href="weixin://dl/bindemail">邮箱地址 </a>
+帐号保护 <a href="weixin://dl/protection">帐号保护 </a>
+新消息通知 <a href="weixin://dl/notifications">新消息通知 </a>
 
-                // alert('Drop WebM file on Chrome or Firefox. Both can play entire file. VLC player or other players may not work.');
-            };
+通讯录黑名单 <a href="weixin://dl/blacklist">通讯录黑名单 </a>
 
-            var mediaRecorder;
-            var videosContainer = document.getElementById('videos-container');
+不让他（她）看我的朋友圈 <a href="weixin://dl/hidemoments">不让他（她）看我的朋友圈 </a>
+不看他（她）的朋友圈 <a href="weixin://dl/blockmoments">不看他（她）的朋友圈 </a>
+通用 <a href="weixin://dl/general">通用 </a>
 
-            function openCamera(){
-                var len = videosContainer.childNodes.length;
-                for(var i=0;i<len;i++){
-                    videosContainer.removeChild(videosContainer.childNodes[i]);
-                }
+多语言 <a href="weixin://dl/languages">多语言 </a>
+字体大小 <a href="weixin://dl/textsize">字体大小 </a>
+我的表情 <a href="weixin://dl/stickersetting">我的表情 </a>
+朋友圈小视频 <a href="weixin://dl/sight">朋友圈小视频 </a>
+功能 <a href="weixin://dl/features">功能 </a>
 
-                var video = document.createElement('video');
+通讯录同步助手 <a href="weixin://dl/securityassistant">通讯录同步助手 </a>
+群发助手 <a href="weixin://dl/broadcastmessage">群发助手 </a>
+聊天记录迁移 <a href="weixin://dl/chathistory">聊天记录迁移 </a>
+清理微信存储空间 <a href="weixin://dl/clear">清理微信存储空间 </a>
+帮助与反馈
+意见反馈 <a href="weixin://dl/help">意见反馈 </a>
+关于微信 <a href="weixin://dl/about">关于微信 </a>
+未知
+w<a href="eixin://dl/chat">weixin://dl/chat</a>
+w<a href="eixin://dl/designeremoji">weixin://dl/designeremoji</a>
+w<a href="eixin://dl/login/common_view">weixin://dl/login/common_view</a>
+w<a href="eixin://dl/login/phone_view">weixin://dl/login/phone_view</a>
+w<a href="eixin://dl/personalemoticon">weixin://dl/personalemoticon</a>
+w<a href="eixin://private/">weixin://private/</a>
+w<a href="eixin://private/setresult/">weixin://private/setresult/</a>
+w<a href="eixin://dl/updatenewestversion">weixin://dl/updatenewestversion</a>
+w<a href="eixin://dl/wechatout">weixin://dl/wechatout</a>
+w<a href="eixin://dl/wechatoutcoupon">weixin://dl/wechatoutcoupon</a>
+隐藏入口
 
-                var videoWidth = 320;
-                var videoHeight = 240;
-
-                video.controls = false;
-                video.muted = true;
-                video.width = videoWidth;
-                video.height = videoHeight;
-                MediaUtils.getUserMedia(true, false, function (err, stream) {
-                    if (err) {
-                        throw err;
-                    } else {
-                        // 通过 MediaRecorder 记录获取到的媒体流
-                        console.log();
-                        mediaRecorder = new MediaRecorder(stream);
-                        mediaStream = stream;
-                        var chunks = [], startTime = 0;
-                        video.srcObject = stream;
-                        video.play();
-
-                        videosContainer.appendChild(video);
-                        mediaRecorder.ondataavailable = function(e) {
-                            mediaRecorder.blobs.push(e.data);
-                            chunks.push(e.data);
-                        };
-                        mediaRecorder.blobs = [];
-
-                        mediaRecorder.onstop = function (e) {
-                            recorderFile = new Blob(chunks, { 'type' : mediaRecorder.mimeType });
-                            chunks = [];
-                            if (null != stopRecordCallback) {
-                                stopRecordCallback();
-                            }
-                        };
-                }
-            });
-            }
-
-            // 停止录制
-            function stopRecord(callback) {
-                stopRecordCallback = callback;
-                // 终止录制器
-                mediaRecorder.stop();
-                // 关闭媒体流
-                MediaUtils.closeStream(mediaStream);
-            }
-
-            var MediaUtils = {
-                /**
-                * 获取用户媒体设备(处理兼容的问题)
-                * @param videoEnable {boolean} - 是否启用摄像头
-                * @param audioEnable {boolean} - 是否启用麦克风
-                * @param callback {Function} - 处理回调
-                */
-                getUserMedia: function (videoEnable, audioEnable, callback) {
-                    navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia
-                    || navigator.msGetUserMedia || window.getUserMedia || (navigator.mediaDevices || {}).getUserMedia;
-                    var constraints = {video: videoEnable, audio: audioEnable};
-                    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                        navigator.mediaDevices.getUserMedia(constraints).then(function (stream) {
-                        callback(false, stream);
-                    })['catch'](function(err) {
-                        callback(err);
-                    });
-                    } else if (navigator.getUserMedia) {
-                        navigator.getUserMedia(constraints, function (stream) {
-                        callback(false, stream);
-                    }, function (err) {
-                        callback(err);
-                    });
-                } else {
-                    callback(new Error('Not support userMedia'));
-                }
-            },
-
-                /**
-                * 关闭媒体流
-                * @param stream {MediaStream} - 需要关闭的流
-                */
-                closeStream: function (stream) {
-                    if (typeof stream.stop === 'function') {
-                        stream.stop();
-                    }
-                    else {
-                        let trackList = [stream.getAudioTracks(), stream.getVideoTracks()];
-
-                        for (let i = 0; i < trackList.length; i++) {
-                            let tracks = trackList[i];
-                            if (tracks && tracks.length > 0) {
-                                for (let j = 0; j < tracks.length; j++) {
-                                    let track = tracks[j];
-                                    if (typeof track.stop === 'function') {
-                                        track.stop();
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }; 
-
-function startRecord() {
-    mediaRecorder.start();
-    setTimeout(function(){
-        // 结束
-        stopRecord(function() {
-            alert("录制成功!");
-            openBtn.disabled=false;
-            saveBtn.disabled=false;
-            //send();
-        });
-    }, 5000);
-}
-
-function saver(){
-    var file = new File([recorderFile], 'msr-' + (new Date).toISOString().replace(/:|\./g, '-') + '.mp4', {
-        type: 'video/mp4'
-    });
-    saveAs(file);
-}
-
-function send(){
-    var file = new File([recorderFile], 'msr-' + (new Date).toISOString().replace(/:|\./g, '-') + '.mp4', {
-        type: 'video/mp4'
-    });
-    var data = new FormData();
-    data.append("username", "test");
-    data.append("userfile", file);
-
-    var req = new XMLHttpRequest();
-    req.open("POST", "com.spinsoft.bip.frame.utils.image.saveMp4.biz.ext");
-    req.send(data);
-}
-
-</script>
+第三方公众号临时会话接口
+w<a href="eixin://dl/business参数 ticket">weixin://dl/business参数 ticket</a>
+w<a href="eixin://dl/business/?ticket=">weixin://dl/business/?ticket=</a>
 
 </body>
 
